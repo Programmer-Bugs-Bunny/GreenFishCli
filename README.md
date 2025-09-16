@@ -1,6 +1,6 @@
 # GoWeb CLI
 
-🚀 基于 [GreenFishCli](https://github.com/Programmer-Bugs-Bunny/GreenFishCli) 的 Go Web 项目脚手架工具
+🚀 基于 [GreenFish](https://github.com/Programmer-Bugs-Bunny/GreenFish) 的 Go Web 项目脚手架工具
 
 类似于 Vue CLI，可以快速创建标准化的 Go Web 项目，内置 Gin、GORM、Zap 日志等常用组件。
 

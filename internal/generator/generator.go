@@ -44,6 +44,11 @@ func (g *Generator) Generate(cfg *config.ProjectConfig) error {
 		return fmt.Errorf("处理模板变量失败: %w", err)
 	}
 
+	// 处理 Go 文件中的导入路径替换
+	if err := g.processGoFiles(cfg); err != nil {
+		return fmt.Errorf("处理 Go 文件导入路径失败: %w", err)
+	}
+
 	fmt.Println("✅ 模板复制完成")
 	return nil
 }
@@ -187,7 +192,73 @@ func (g *Generator) replaceInFile(filePath string, vars map[string]string) error
 
 	// 特殊处理：替换模板仓库的模块名为新的模块名
 	newContent = strings.ReplaceAll(newContent, "github.com/Programmer-Bugs-Bunny/GreenFish", vars["{{.ModuleName}}"])
+	
+	// 替换所有的 go-web-template 导入路径为新的模块名
+	newContent = strings.ReplaceAll(newContent, "go-web-template", vars["{{.ModuleName}}"])
 
 	// 写回文件
 	return os.WriteFile(filePath, []byte(newContent), 0644)
+}
+
+// processGoFiles 处理 Go 文件中的导入路径替换
+func (g *Generator) processGoFiles(cfg *config.ProjectConfig) error {
+	fmt.Println("🔄 处理 Go 文件导入路径...")
+	
+	projectPath := cfg.ProjectName
+	goFileCount := 0
+	
+	// 遍历项目目录，找到所有 .go 文件
+	err := filepath.Walk(projectPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		// 跳过不需要处理的目录
+		if info.IsDir() {
+			dirName := filepath.Base(path)
+			if dirName == ".git" || dirName == "GreenFishCli" || dirName == "vendor" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		
+		// 只处理 .go 文件
+		if filepath.Ext(path) != ".go" {
+			return nil
+		}
+		
+		// 读取文件内容
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("读取文件 %s 失败: %w", path, err)
+		}
+		
+		// 替换导入路径
+		newContent := string(content)
+		oldImportPath := "go-web-template"
+		newImportPath := cfg.ModuleName
+		
+		if strings.Contains(newContent, oldImportPath) {
+			newContent = strings.ReplaceAll(newContent, oldImportPath, newImportPath)
+			
+			// 写回文件
+			if err := os.WriteFile(path, []byte(newContent), 0644); err != nil {
+				return fmt.Errorf("写入文件 %s 失败: %w", path, err)
+			}
+			
+			// 计算相对路径用于显示
+			relPath, _ := filepath.Rel(projectPath, path)
+			fmt.Printf("✅ 已处理: %s\n", relPath)
+			goFileCount++
+		}
+		
+		return nil
+	})
+	
+	if err != nil {
+		return err
+	}
+	
+	fmt.Printf("🔄 共处理了 %d 个 Go 文件\n", goFileCount)
+	return nil
 }
