@@ -80,7 +80,61 @@ create_install_dir() {
     fi
 }
 
-# 检查 Go 环境
+# 获取最新版本号
+get_latest_version() {
+    info "获取最新版本信息..."
+    
+    # 尝试从 GitHub API 获取最新版本
+    if command -v curl &> /dev/null; then
+        LATEST_VERSION=$(curl -s "https://api.github.com/repos/Programmer-Bugs-Bunny/GreenFishCli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    elif command -v wget &> /dev/null; then
+        LATEST_VERSION=$(wget -qO- "https://api.github.com/repos/Programmer-Bugs-Bunny/GreenFishCli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    else
+        error "需要 curl 或 wget 来下载文件"
+    fi
+    
+    if [ -z "$LATEST_VERSION" ]; then
+        return 1
+    fi
+    
+    info "最新版本: $LATEST_VERSION"
+}
+
+# 从 GitHub Releases 下载二进制文件
+download_binary() {
+    info "正在下载预编译的二进制文件..."
+    
+    # 构建二进制文件名
+    if [ "$OS" = "windows" ]; then
+        BINARY_FILE="${BINARY_NAME}-${OS}-${ARCH}.exe"
+    else
+        BINARY_FILE="${BINARY_NAME}-${OS}-${ARCH}"
+    fi
+    
+    DOWNLOAD_URL="https://github.com/Programmer-Bugs-Bunny/GreenFishCli/releases/download/${LATEST_VERSION}/${BINARY_FILE}"
+    
+    info "下载 URL: $DOWNLOAD_URL"
+    
+    # 下载二进制文件
+    if command -v curl &> /dev/null; then
+        if ! curl -L "$DOWNLOAD_URL" -o "$INSTALL_DIR/$BINARY_NAME" --fail --silent --show-error; then
+            return 1
+        fi
+    elif command -v wget &> /dev/null; then
+        if ! wget -q "$DOWNLOAD_URL" -O "$INSTALL_DIR/$BINARY_NAME"; then
+            return 1
+        fi
+    else
+        error "需要 curl 或 wget 来下载文件"
+    fi
+    
+    # 设置执行权限
+    chmod +x "$INSTALL_DIR/$BINARY_NAME"
+    
+    success "二进制文件下载完成！"
+}
+
+# 检查 Go 环境（仅用于源码安装）
 check_go() {
     if ! command -v go &> /dev/null; then
         error "未找到 Go 环境，请先安装 Go (https://golang.org/dl/)"
@@ -90,19 +144,26 @@ check_go() {
     info "发现 Go 版本: $GO_VERSION"
 }
 
-# 从源码编译安装
+# 从源码编译安装（备用方案）
 install_from_source() {
-    info "正在从源码编译安装 GoWeb CLI..."
+    warning "正在尝试从源码编译安装（这需要 Go 环境）..."
+    
+    check_go
     
     TEMP_DIR=$(mktemp -d)
     cd "$TEMP_DIR"
     
     info "克隆仓库..."
-    git clone "$REPO_URL" goweb-cli
+    if ! git clone "$REPO_URL" goweb-cli; then
+        error "克隆仓库失败"
+    fi
+    
     cd goweb-cli
     
     info "编译二进制文件..."
-    go build -o "$BINARY_NAME" .
+    if ! go build -o "$BINARY_NAME" .; then
+        error "编译失败"
+    fi
     
     info "安装二进制文件..."
     mv "$BINARY_NAME" "$INSTALL_DIR/"
@@ -112,7 +173,38 @@ install_from_source() {
     cd /
     rm -rf "$TEMP_DIR"
     
-    success "GoWeb CLI 安装完成！"
+    success "GoWeb CLI 源码安装完成！"
+}
+
+# 主要安装函数
+install_goweb() {
+    # 首先尝试从 Releases 下载
+    if get_latest_version && download_binary; then
+        success "从 GitHub Releases 安装成功！"
+        return 0
+    fi
+    
+    # 如果下载失败，提供选择
+    warning "从 Releases 下载失败"
+    echo ""
+    echo "可选的安装方式:"
+    echo "1. 从源码编译安装（需要 Go 环境）"
+    echo "2. 退出安装"
+    echo ""
+    read -p "请选择 (1-2): " choice
+    
+    case $choice in
+        1)
+            install_from_source
+            ;;
+        2)
+            info "安装已取消"
+            exit 0
+            ;;
+        *)
+            error "无效选择"
+            ;;
+    esac
 }
 
 # 检查 PATH
@@ -159,9 +251,8 @@ main() {
     
     detect_os
     detect_arch
-    check_go
     create_install_dir
-    install_from_source
+    install_goweb
     check_path
     verify_installation
     

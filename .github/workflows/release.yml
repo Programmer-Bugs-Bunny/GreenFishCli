@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Get dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Get tag name
+      id: tag
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build binaries
+      run: |
+        mkdir -p build
+        
+        # Linux AMD64
+        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.tag.outputs.tag }} -s -w" -o build/goweb-linux-amd64 .
+        
+        # Linux ARM64
+        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${{ steps.tag.outputs.tag }} -s -w" -o build/goweb-linux-arm64 .
+        
+        # macOS AMD64
+        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.tag.outputs.tag }} -s -w" -o build/goweb-darwin-amd64 .
+        
+        # macOS ARM64 (M1/M2)
+        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${{ steps.tag.outputs.tag }} -s -w" -o build/goweb-darwin-arm64 .
+        
+        # Windows AMD64
+        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.tag.outputs.tag }} -s -w" -o build/goweb-windows-amd64.exe .
+
+    - name: Generate checksums
+      run: |
+        cd build
+        sha256sum * > checksums.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/goweb-linux-amd64
+          build/goweb-linux-arm64
+          build/goweb-darwin-amd64
+          build/goweb-darwin-arm64
+          build/goweb-windows-amd64.exe
+          build/checksums.txt
+        name: Release ${{ steps.tag.outputs.tag }}
+        body: |
+          ## 🚀 GoWeb CLI ${{ steps.tag.outputs.tag }}
+          
+          ### 📦 一键安装
+          ```bash
+          curl -sSL https://raw.githubusercontent.com/Programmer-Bugs-Bunny/GreenFishCli/main/install.sh | bash
+          ```
+          
+          ### 📥 手动下载
+          选择适合您系统的二进制文件：
+          
+          - **Linux AMD64**: `goweb-linux-amd64`
+          - **Linux ARM64**: `goweb-linux-arm64`
+          - **macOS Intel**: `goweb-darwin-amd64`
+          - **macOS M1/M2**: `goweb-darwin-arm64`
+          - **Windows**: `goweb-windows-amd64.exe`
+          
+          ### ✅ 校验文件完整性
+          ```bash
+          sha256sum -c checksums.txt
+          ```
+          
+          ---
+          
+          使用 `goweb --version` 查看版本信息
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
