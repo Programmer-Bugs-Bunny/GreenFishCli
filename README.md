@@ -1,6 +1,6 @@
 # GoWeb CLI
 
-🚀 基于 [GoWebTemplate](https://github.com/Programmer-Bugs-Bunny/GoWebTemplate) 的 Go Web 项目脚手架工具
+🚀 基于 [GreenFishCli](https://github.com/Programmer-Bugs-Bunny/GreenFishCli) 的 Go Web 项目脚手架工具
 
 类似于 Vue CLI，可以快速创建标准化的 Go Web 项目，内置 Gin、GORM、Zap 日志等常用组件。
 
@@ -17,7 +17,7 @@
 ### 方法一：一键安装（推荐）
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Programmer-Bugs-Bunny/goweb-cli/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Programmer-Bugs-Bunny/GreenFishCli/main/install.sh | bash
 ```
 
 ### 方法二：手动编译安装
