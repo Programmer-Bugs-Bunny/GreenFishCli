@@ -15,7 +15,7 @@ import (
 var createCmd = &cobra.Command{
 	Use:   "create [project-name]",
 	Short: "创建新的 Go Web 项目",
-	Long: `基于 GoWebTemplate 模板创建新的 Go Web 项目。
+	Long: `基于 GreenFish 模板创建新的 Go Web 项目。
 支持交互式配置项目参数，自动替换模块名和配置文件。`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -84,7 +84,7 @@ func collectProjectConfig(projectName string) (*config.ProjectConfig, error) {
 			Name: "description",
 			Prompt: &survey.Input{
 				Message: "项目描述:",
-				Default: fmt.Sprintf("基于 GoWebTemplate 创建的 %s 项目", projectName),
+				Default: fmt.Sprintf("基于 GreenFish 创建的 %s 项目", projectName),
 			},
 		},
 		{

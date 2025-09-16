@@ -176,7 +176,7 @@ func (g *Generator) replaceInFile(filePath string, vars map[string]string) error
 	}
 
 	// 特殊处理：替换模板仓库的模块名为新的模块名
-	newContent = strings.ReplaceAll(newContent, "github.com/Programmer-Bugs-Bunny/GoWebTemplate", vars["{{.ModuleName}}"])
+	newContent = strings.ReplaceAll(newContent, "github.com/Programmer-Bugs-Bunny/GreenFish", vars["{{.ModuleName}}"])
 
 	// 写回文件
 	return os.WriteFile(filePath, []byte(newContent), 0644)

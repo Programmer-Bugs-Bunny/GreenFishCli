@@ -8,7 +8,7 @@
 
 - 🎯 **交互式创建**: 类似 `vue create`，提供友好的命令行交互
 - 🛠️ **自动配置**: 自动替换模块名、配置文件和项目信息
-- 📦 **完整模板**: 基于成熟的 GoWebTemplate，包含最佳实践
+- 📦 **完整模板**: 基于成熟的 GreenFish，包含最佳实践
 - 🔧 **高度定制**: 支持自定义项目名、作者、端口、时区等
 - 🚀 **即开即用**: 生成的项目可直接运行
 
@@ -75,7 +75,7 @@ $ goweb create my-web-app
 
 ? 项目名称: my-web-app
 ? Go 模块名: github.com/myname/my-web-app
-? 项目描述: 基于 GoWebTemplate 创建的 my-web-app 项目
+? 项目描述: 基于 GreenFish 创建的 my-web-app 项目
 ? 作者: Your Name
 ? 服务端口: 8080
 ? 时区: Asia/Shanghai

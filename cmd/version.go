@@ -14,8 +14,8 @@ var versionCmd = &cobra.Command{
 	Long:  "显示 GoWeb CLI 的版本信息",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("GoWeb CLI %s\n", version)
-		fmt.Println("基于 GoWebTemplate 的 Go Web 项目脚手架工具")
-		fmt.Println("https://github.com/Programmer-Bugs-Bunny/goweb-cli")
+		fmt.Println("基于 GreenFish 的 Go Web 项目脚手架工具")
+		fmt.Println("https://github.com/Programmer-Bugs-Bunny/GreenFishCli")
 	},
 }
 
