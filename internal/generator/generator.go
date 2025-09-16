@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/Programmer-Bugs-Bunny/GreenFishCli/internal/config"
 	"github.com/Programmer-Bugs-Bunny/GreenFishCli/internal/template"
+)
+
+const (
+	// 模板仓库地址
+	templateRepoURL = "https://github.com/Programmer-Bugs-Bunny/GreenFish.git"
 )
 
 type Generator struct {
@@ -25,29 +31,12 @@ func New() *Generator {
 func (g *Generator) Generate(cfg *config.ProjectConfig) error {
 	fmt.Printf("🚀 正在创建项目 '%s'...\n", cfg.ProjectName)
 
-	// 创建项目目录
-	if err := os.MkdirAll(cfg.ProjectName, 0755); err != nil {
-		return fmt.Errorf("创建项目目录失败: %w", err)
-	}
-
-	// 获取模板源目录（当前项目的父目录，排除cli-tool目录）
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("获取当前目录失败: %w", err)
-	}
-
-	// 如果当前在 cli-tool 目录中，则模板源为上级目录
-	templateSourceDir := filepath.Dir(currentDir)
-	if !strings.HasSuffix(currentDir, "cli-tool") {
-		templateSourceDir = currentDir
-	}
-
-	fmt.Printf("📁 模板源目录: %s\n", templateSourceDir)
+	// 克隆模板仓库（git clone会自动创建目标目录）
 	fmt.Printf("📁 目标目录: %s\n", cfg.ProjectName)
-
-	// 复制模板文件
-	if err := g.copyTemplate(templateSourceDir, cfg.ProjectName, cfg); err != nil {
-		return fmt.Errorf("复制模板失败: %w", err)
+	fmt.Printf("📦 正在克隆模板仓库...\n")
+	
+	if err := g.cloneTemplate(cfg.ProjectName); err != nil {
+		return fmt.Errorf("克隆模板失败: %w", err)
 	}
 
 	// 处理模板变量替换
@@ -56,6 +45,27 @@ func (g *Generator) Generate(cfg *config.ProjectConfig) error {
 	}
 
 	fmt.Println("✅ 模板复制完成")
+	return nil
+}
+
+// cloneTemplate 克隆模板仓库
+func (g *Generator) cloneTemplate(targetDir string) error {
+	// 使用 git clone 克隆模板仓库到目标目录
+	cmd := exec.Command("git", "clone", templateRepoURL, targetDir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("执行 git clone 失败: %w", err)
+	}
+	
+	// 删除克隆后的 .git 目录，使其成为一个干净的项目
+	gitDir := filepath.Join(targetDir, ".git")
+	if err := os.RemoveAll(gitDir); err != nil {
+		// 删除 .git 目录失败不是致命错误，继续执行
+		fmt.Printf("⚠️  删除 .git 目录失败: %v\n", err)
+	}
+	
 	return nil
 }
 
